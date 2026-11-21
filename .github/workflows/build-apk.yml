@@ -1,0 +1,49 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'release atau debug'
+        required: false
+        default: 'release'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract project zip
+        run: |
+          unzip -o "base tr4sfight.zip" -d extracted
+          ls extracted
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: |
+          cd extracted
+          # FILL: kalau pubspec.yaml ternyata di dalam subfolder (misal extracted/namafolder/pubspec.yaml), tambahin "cd namafolder" di sini
+          flutter pub get
+
+      - name: Build APK
+        run: |
+          cd extracted
+          flutter build apk --${{ github.event.inputs.build_type }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-apk
+          path: extracted/**/build/app/outputs/flutter-apk/app-${{ github.event.inputs.build_type }}.apk
